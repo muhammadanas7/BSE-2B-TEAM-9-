@@ -495,3 +495,196 @@ Workout* FileManager::loadAllWorkouts(int& count) {
     Workout* arr = new Workout[count];
     for (int i = 0; i < count; ++i) arr[i] = validWorkouts[i];
     return arr;
+
+
+    bool FileManager::savePlan(const MembershipPlan & p) {
+        QFile file(plansFile);
+        if (!file.open(QIODevice::Append | QIODevice::Text)) return false;
+        QTextStream out(&file);
+        out << p.toCSV() << "\n";
+        file.close();
+        return true;
+    }
+
+    bool FileManager::updatePlan(const MembershipPlan & p) {
+        QStringList lines = readLines(plansFile);
+        QStringList updated;
+        bool found = false;
+        for (const QString& line : lines) {
+            if (line.trimmed().isEmpty()) continue;
+            if (line.split(',').first().toInt() == p.getPlanId()) {
+                updated.append(p.toCSV());
+                found = true;
+            }
+            else {
+                updated.append(line);
+            }
+        }
+        if (!found) return false;
+        return writeLines(plansFile, updated);
+    }
+
+    bool FileManager::deletePlan(int planId) {
+        QStringList lines = readLines(plansFile);
+        QStringList updated;
+        for (const QString& line : lines) {
+            if (line.trimmed().isEmpty()) continue;
+            if (line.split(',').first().toInt() != planId) updated.append(line);
+        }
+        return writeLines(plansFile, updated);
+    }
+
+    MembershipPlan* FileManager::loadAllPlans(int& count) {
+        QStringList lines = readLines(plansFile);
+        QList<MembershipPlan> validPlans;
+        for (const QString& line : lines) {
+            if (line.trimmed().isEmpty()) continue;
+            validPlans.append(MembershipPlan::fromCSV(line));
+        }
+        count = validPlans.size();
+        if (count == 0) return nullptr;
+        MembershipPlan* arr = new MembershipPlan[count];
+        for (int i = 0; i < count; ++i) arr[i] = validPlans[i];
+        return arr;
+    }
+
+    // ── Attendance ───────────────────────────────────────────────
+    int FileManager::getNextAttendanceId() {
+        QStringList lines = readLines(attendanceFile);
+        int maxId = 0;
+        for (const QString& line : lines) {
+            if (line.trimmed().isEmpty()) continue;
+            int id = line.split(',').first().toInt();
+            if (id > maxId) maxId = id;
+        }
+        return maxId + 1;
+    }
+
+    bool FileManager::saveAttendance(const Attendance & a) {
+        QFile file(attendanceFile);
+        if (!file.open(QIODevice::Append | QIODevice::Text)) return false;
+        QTextStream out(&file);
+        out << a.toCSV() << "\n";
+        file.close();
+        return true;
+    }
+
+    bool FileManager::deleteAttendanceForMember(int memberId) {
+        QStringList lines = readLines(attendanceFile);
+        QStringList updated;
+        for (const QString& line : lines) {
+            if (line.trimmed().isEmpty()) continue;
+            if (line.split(',').at(1).toInt() != memberId) updated.append(line);
+        }
+        return writeLines(attendanceFile, updated);
+    }
+
+    bool FileManager::deleteAllAttendance() {
+        QFile file(attendanceFile);
+        if (file.exists()) return file.remove();
+        return true;
+    }
+
+    Attendance* FileManager::loadAttendanceForMember(int memberId, int& count) {
+        QStringList lines = readLines(attendanceFile);
+        QStringList filtered;
+        for (const QString& line : lines) {
+            if (line.trimmed().isEmpty()) continue;
+            if (line.split(',').at(1).toInt() == memberId) filtered.append(line);
+        }
+        count = filtered.size();
+        if (count == 0) return nullptr;
+        Attendance* arr = new Attendance[count];
+        for (int i = 0; i < count; ++i) arr[i] = Attendance::fromCSV(filtered[i]);
+        return arr;
+    }
+
+    Attendance* FileManager::loadAllAttendance(int& count) {
+        QStringList lines = readLines(attendanceFile);
+        QList<Attendance> validAttendance;
+        for (const QString& line : lines) {
+            if (line.trimmed().isEmpty()) continue;
+            validAttendance.append(Attendance::fromCSV(line));
+        }
+        count = validAttendance.size();
+        if (count == 0) return nullptr;
+        Attendance* arr = new Attendance[count];
+        for (int i = 0; i < count; ++i) arr[i] = validAttendance[i];
+        return arr;
+    }
+
+    // ── Equipment ────────────────────────────────────────────────
+    int FileManager::getNextEquipmentId() {
+        QStringList lines = readLines(equipmentFile);
+        int maxId = 0;
+        for (const QString& line : lines) {
+            if (line.trimmed().isEmpty()) continue;
+            int id = line.split(',').first().toInt();
+            if (id > maxId) maxId = id;
+        }
+        return maxId + 1;
+    }
+
+    bool FileManager::saveEquipment(const Equipment & e) {
+        QFile file(equipmentFile);
+        if (!file.open(QIODevice::Append | QIODevice::Text)) return false;
+        QTextStream out(&file);
+        out << e.toCSV() << "\n";
+        file.close();
+        return true;
+    }
+
+    bool FileManager::updateEquipment(const Equipment & e) {
+        QStringList lines = readLines(equipmentFile);
+        QStringList updated;
+        bool found = false;
+        for (const QString& line : lines) {
+            if (line.trimmed().isEmpty()) continue;
+            if (line.split(',').first().toInt() == e.getEquipmentId()) {
+                updated.append(e.toCSV());
+                found = true;
+            }
+            else {
+                updated.append(line);
+            }
+        }
+        if (!found) return false;
+        return writeLines(equipmentFile, updated);
+    }
+
+    bool FileManager::deleteEquipment(int equipId) {
+        QStringList lines = readLines(equipmentFile);
+        QStringList updated;
+        bool found = false;
+        for (const QString& line : lines) {
+            if (line.trimmed().isEmpty()) continue;
+            if (line.split(',').first().toInt() != equipId) {
+                updated.append(line);
+            }
+            else {
+                found = true;
+            }
+        }
+        if (!found) return false;
+        return writeLines(equipmentFile, updated);
+    }
+
+    bool FileManager::deleteAllEquipment() {
+        QFile file(equipmentFile);
+        if (file.exists()) return file.remove();
+        return true;
+    }
+
+    Equipment* FileManager::loadAllEquipment(int& count) {
+        QStringList lines = readLines(equipmentFile);
+        QList<Equipment> validEquipment;
+        for (const QString& line : lines) {
+            if (line.trimmed().isEmpty()) continue;
+            validEquipment.append(Equipment::fromCSV(line));
+        }
+        count = validEquipment.size();
+        if (count == 0) return nullptr;
+        Equipment* arr = new Equipment[count];
+        for (int i = 0; i < count; ++i) arr[i] = validEquipment[i];
+        return arr;
+    }
