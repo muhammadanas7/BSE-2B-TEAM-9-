@@ -155,3 +155,101 @@ Member* FileManager::loadAllMembers(int& count) {
     }
     return arr;
 }
+
+// ── Trainers ─────────────────────────────────────────────────
+int FileManager::getNextTrainerId() {
+    QStringList lines = readLines(trainersFile);
+    int maxId = 0;
+    for (const QString& line : lines) {
+        if (line.trimmed().isEmpty()) continue;
+        int id = line.split(',').first().toInt();
+        if (id > maxId) maxId = id;
+    }
+    return maxId + 1;
+}
+
+bool FileManager::saveTrainer(const Trainer& t) {
+    if (t.getTrainerId() <= 0) return false;
+    QFile file(trainersFile);
+    if (!file.open(QIODevice::Append | QIODevice::Text)) return false;
+    QTextStream out(&file);
+    out << t.toCSV() << "\n";
+    file.close();
+    return true;
+}
+
+bool FileManager::updateTrainer(const Trainer& t) {
+    if (t.getTrainerId() <= 0) return false;
+    QStringList lines = readLines(trainersFile);
+    QStringList updated;
+    bool found = false;
+    for (const QString& line : lines) {
+        if (line.trimmed().isEmpty()) continue;
+        if (line.split(',').first().toInt() == t.getTrainerId()) {
+            updated.append(t.toCSV());
+            found = true;
+        }
+        else {
+            updated.append(line);
+        }
+    }
+    if (!found) return false;
+    return writeLines(trainersFile, updated);
+}
+
+bool FileManager::deleteTrainer(int trainerId) {
+    if (trainerId <= 0) return false;
+    QStringList lines = readLines(trainersFile);
+    QStringList updated;
+    bool found = false;
+    for (const QString& line : lines) {
+        if (line.trimmed().isEmpty()) continue;
+        if (line.split(',').first().toInt() != trainerId) {
+            updated.append(line);
+        }
+        else {
+            found = true;
+        }
+    }
+    if (!found) return false;
+    return writeLines(trainersFile, updated);
+}
+
+bool FileManager::deleteAllTrainers() {
+    QFile file(trainersFile);
+    if (file.exists()) {
+        file.remove();
+        QFile newFile(trainersFile);
+        newFile.open(QIODevice::WriteOnly);
+        newFile.close();
+    }
+    return true;
+}
+
+Trainer FileManager::loadTrainer(int trainerId) {
+    if (trainerId <= 0) return Trainer();
+    QStringList lines = readLines(trainersFile);
+    for (const QString& line : lines) {
+        if (line.trimmed().isEmpty()) continue;
+        if (line.split(',').first().toInt() == trainerId)
+            return Trainer::fromCSV(line);
+    }
+    return Trainer();
+}
+
+Trainer* FileManager::loadAllTrainers(int& count) {
+    QStringList lines = readLines(trainersFile);
+    QList<Trainer> validTrainers;
+    for (const QString& line : lines) {
+        if (line.trimmed().isEmpty()) continue;
+        Trainer t = Trainer::fromCSV(line);
+        if (t.getTrainerId() > 0 && !t.getName().isEmpty()) {
+            validTrainers.append(t);
+        }
+    }
+    count = validTrainers.size();
+    if (count == 0) return nullptr;
+    Trainer* arr = new Trainer[count];
+    for (int i = 0; i < count; ++i) arr[i] = validTrainers[i];
+    return arr;
+}
