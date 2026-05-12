@@ -5,3 +5,4 @@ Attendance.h & Attendance.cpp
 File Manager header part 1 only till trainers
 file Manager cpp part 1 till
 Main Window part 1 till sidebar loading 
+BY UAIR:
