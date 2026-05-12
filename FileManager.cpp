@@ -252,4 +252,4 @@ Trainer* FileManager::loadAllTrainers(int& count) {
     Trainer* arr = new Trainer[count];
     for (int i = 0; i < count; ++i) arr[i] = validTrainers[i];
     return arr;
-}
+} 
