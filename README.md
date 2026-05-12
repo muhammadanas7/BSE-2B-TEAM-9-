@@ -6,3 +6,8 @@ File Manager header part 1 only till trainers
 file Manager cpp part 1 till
 Main Window part 1 till sidebar loading 
 BY UZAIR:
+
+BY HAFIZ MUHAMMAD KHUBAIB:
+Member.h, Member.cpp
+Payment.h, Payment.cpp
+MainWindowPart2.h
