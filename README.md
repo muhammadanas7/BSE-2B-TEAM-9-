@@ -5,7 +5,11 @@ Attendance.h & Attendance.cpp
 File Manager header part 1 only till trainers
 file Manager cpp part 1 till
 Main Window part 1 till sidebar loading 
+
 BY UZAIR:
+Auth.h, Auth.cpp
+GymManager.h, GymManager.cpp
+Session.h, Session.cpp
 
 BY HAFIZ MUHAMMAD KHUBAIB:
 Member.h, Member.cpp
