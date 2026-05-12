@@ -10,6 +10,7 @@ BY UZAIR:
 Auth.h, Auth.cpp
 GymManager.h, GymManager.cpp
 Session.h, Session.cpp
+MainWindow3.cpp
 
 BY HAFIZ MUHAMMAD KHUBAIB:
 Member.h, Member.cpp
