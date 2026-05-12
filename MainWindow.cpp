@@ -563,3 +563,510 @@ QWidget* MainWindow::buildPlansPage() {
     lay->addStretch();
     return page;
 }
+
+QWidget* MainWindow::buildAttendancePage() {
+    QWidget* page = new QWidget();
+    page->setObjectName("page");
+    QVBoxLayout* lay = new QVBoxLayout(page);
+    lay->setContentsMargins(20, 15, 20, 15);
+    QLabel* title = new QLabel("✅  Attendance Tracking");
+    title->setObjectName("pageTitle");
+    lay->addWidget(title);
+    QGroupBox* ctrlBox = new QGroupBox("Record Attendance");
+    QHBoxLayout* ctrlLay = new QHBoxLayout(ctrlBox);
+    checkInIdBox = new QLineEdit();
+    checkInIdBox->setPlaceholderText("Member ID");
+    checkInIdBox->setFixedWidth(100);
+    sessionCombo = new QComboBox();
+    sessionCombo->addItems({ "Gym", "Yoga", "CrossFit", "Swimming", "Cardio" });
+    QPushButton* btnIn = new QPushButton("✅ Check In");
+    btnIn->setObjectName("actionBtn");
+    connect(btnIn, &QPushButton::clicked, this, &MainWindow::onCheckIn);
+    checkOutIdBox = new QLineEdit();
+    checkOutIdBox->setPlaceholderText("Member ID");
+    checkOutIdBox->setFixedWidth(100);
+    QPushButton* btnOut = new QPushButton("🚪 Check Out");
+    btnOut->setObjectName("secondaryBtn");
+    connect(btnOut, &QPushButton::clicked, this, &MainWindow::onCheckOut);
+    QPushButton* btnRef = new QPushButton("🔄 Refresh");
+    btnRef->setObjectName("secondaryBtn");
+    connect(btnRef, &QPushButton::clicked, this, &MainWindow::onRefreshAttendance);
+    ctrlLay->addWidget(new QLabel("Member:"));
+    ctrlLay->addWidget(checkInIdBox);
+    ctrlLay->addWidget(new QLabel("Session:"));
+    ctrlLay->addWidget(sessionCombo);
+    ctrlLay->addWidget(btnIn);
+    ctrlLay->addSpacing(20);
+    ctrlLay->addWidget(new QLabel("Check Out ID:"));
+    ctrlLay->addWidget(checkOutIdBox);
+    ctrlLay->addWidget(btnOut);
+    ctrlLay->addStretch();
+    ctrlLay->addWidget(btnRef);
+    lay->addWidget(ctrlBox);
+    attendanceTable = new QTableWidget();
+    attendanceTable->setColumnCount(7);
+    attendanceTable->setHorizontalHeaderLabels({ "ID","Member","Date","Session","Check-In","Check-Out","Duration" });
+    attendanceTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    attendanceTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    attendanceTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    attendanceTable->setAlternatingRowColors(true);
+    attendanceTable->verticalHeader()->setVisible(false);
+    lay->addWidget(attendanceTable);
+    return page;
+}
+
+QWidget* MainWindow::buildEquipmentPage() {
+    QWidget* page = new QWidget();
+    page->setObjectName("page");
+    QVBoxLayout* lay = new QVBoxLayout(page);
+    lay->setContentsMargins(20, 15, 20, 15);
+    QLabel* title = new QLabel("🔧  Equipment Management");
+    title->setObjectName("pageTitle");
+    lay->addWidget(title);
+    QHBoxLayout* toolbar = new QHBoxLayout();
+    QPushButton* btnAdd = new QPushButton("➕ Add Equipment");
+    QPushButton* btnEdit = new QPushButton("✏️ Edit");
+    QPushButton* btnDel = new QPushButton("🗑 Remove");
+    QPushButton* btnRefresh = new QPushButton("🔄 Refresh");
+    btnAdd->setObjectName("actionBtn");
+    btnEdit->setObjectName("secondaryBtn");
+    btnDel->setObjectName("dangerBtn");
+    btnRefresh->setObjectName("secondaryBtn");
+    connect(btnAdd, &QPushButton::clicked, this, &MainWindow::onAddEquipment);
+    connect(btnEdit, &QPushButton::clicked, this, &MainWindow::onEditEquipment);
+    connect(btnDel, &QPushButton::clicked, this, &MainWindow::onDeleteEquipment);
+    connect(btnRefresh, &QPushButton::clicked, this, &MainWindow::populateEquipmentTable);
+    toolbar->addStretch();
+    toolbar->addWidget(btnAdd);
+    toolbar->addWidget(btnEdit);
+    toolbar->addWidget(btnDel);
+    toolbar->addWidget(btnRefresh);
+    lay->addLayout(toolbar);
+    equipmentTable = new QTableWidget();
+    equipmentTable->setColumnCount(8);
+    equipmentTable->setHorizontalHeaderLabels({ "ID","Name","Category","Brand","Qty","Available","Condition","Status" });
+    equipmentTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    equipmentTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    equipmentTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    equipmentTable->setAlternatingRowColors(true);
+    equipmentTable->verticalHeader()->setVisible(false);
+    lay->addWidget(equipmentTable);
+    return page;
+}
+
+QWidget* MainWindow::buildPaymentsPage() {
+    QWidget* page = new QWidget();
+    page->setObjectName("page");
+    QVBoxLayout* lay = new QVBoxLayout(page);
+    lay->setContentsMargins(20, 15, 20, 15);
+    QLabel* title = new QLabel("💳  Payments");
+    title->setObjectName("pageTitle");
+    lay->addWidget(title);
+    QHBoxLayout* toolbar = new QHBoxLayout();
+    QPushButton* btnPay = new QPushButton("➕ Record Payment");
+    QPushButton* btnReceipt = new QPushButton("🧾 View Receipt");
+    QPushButton* btnRefresh = new QPushButton("🔄 Refresh");
+    btnPay->setObjectName("actionBtn");
+    btnReceipt->setObjectName("secondaryBtn");
+    btnRefresh->setObjectName("secondaryBtn");
+    connect(btnPay, &QPushButton::clicked, this, &MainWindow::onRecordPayment);
+    connect(btnReceipt, &QPushButton::clicked, this, &MainWindow::onViewReceipt);
+    connect(btnRefresh, &QPushButton::clicked, this, &MainWindow::populatePaymentsTable);
+    toolbar->addStretch();
+    toolbar->addWidget(btnPay);
+    toolbar->addWidget(btnReceipt);
+    toolbar->addWidget(btnRefresh);
+    lay->addLayout(toolbar);
+    paymentsTable = new QTableWidget();
+    paymentsTable->setColumnCount(7);
+    paymentsTable->setHorizontalHeaderLabels({ "ID","Member","Amount","Date","Method","Description","Status" });
+    paymentsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    paymentsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    paymentsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    paymentsTable->setAlternatingRowColors(true);
+    paymentsTable->verticalHeader()->setVisible(false);
+    lay->addWidget(paymentsTable);
+    return page;
+}
+
+QWidget* MainWindow::buildReportsPage() {
+    QWidget* page = new QWidget();
+    page->setObjectName("page");
+    QVBoxLayout* lay = new QVBoxLayout(page);
+    lay->setContentsMargins(20, 15, 20, 15);
+    QLabel* title = new QLabel("📊  Reports");
+    title->setObjectName("pageTitle");
+    lay->addWidget(title);
+    QGroupBox* ctrlBox = new QGroupBox("Generate Reports");
+    QHBoxLayout* ctrlLay = new QHBoxLayout(ctrlBox);
+    reportMemberIdBox = new QLineEdit();
+    reportMemberIdBox->setPlaceholderText("Member ID");
+    reportMemberIdBox->setFixedWidth(90);
+    reportMonthCombo = new QComboBox();
+    QLocale locale;
+    for (int i = 1; i <= 12; ++i) reportMonthCombo->addItem(locale.monthName(i), i);
+    reportMonthCombo->setCurrentIndex(QDate::currentDate().month() - 1);
+    reportYearCombo = new QComboBox();
+    int yr = QDate::currentDate().year();
+    for (int y = yr - 2; y <= yr + 1; ++y) reportYearCombo->addItem(QString::number(y), y);
+    reportYearCombo->setCurrentIndex(2);
+    QPushButton* btnMember = new QPushButton("Member Report");
+    QPushButton* btnRevenue = new QPushButton("Revenue Report");
+    QPushButton* btnAttend = new QPushButton("Attendance Report");
+    QPushButton* btnEquip = new QPushButton("Equipment Report");
+    QPushButton* btnBackup = new QPushButton("💾 Backup Data");
+    btnMember->setObjectName("actionBtn");
+    btnRevenue->setObjectName("secondaryBtn");
+    btnAttend->setObjectName("secondaryBtn");
+    btnEquip->setObjectName("secondaryBtn");
+    btnBackup->setObjectName("secondaryBtn");
+    connect(btnMember, &QPushButton::clicked, this, &MainWindow::onGenerateMemberReport);
+    connect(btnRevenue, &QPushButton::clicked, this, &MainWindow::onGenerateRevenueReport);
+    connect(btnAttend, &QPushButton::clicked, this, [this]() {
+        int m = reportMonthCombo->currentData().toInt();
+        int y = reportYearCombo->currentData().toInt();
+        reportOutput->setPlainText(gymManager->generateAttendanceReport(m, y));
+        });
+    connect(btnEquip, &QPushButton::clicked, this, [this]() {
+        reportOutput->setPlainText(gymManager->generateEquipmentReport());
+        });
+    connect(btnBackup, &QPushButton::clicked, this, &MainWindow::onBackupData);
+    ctrlLay->addWidget(new QLabel("Member ID:"));
+    ctrlLay->addWidget(reportMemberIdBox);
+    ctrlLay->addWidget(new QLabel("Month:"));
+    ctrlLay->addWidget(reportMonthCombo);
+    ctrlLay->addWidget(new QLabel("Year:"));
+    ctrlLay->addWidget(reportYearCombo);
+    ctrlLay->addWidget(btnMember);
+    ctrlLay->addWidget(btnRevenue);
+    ctrlLay->addWidget(btnAttend);
+    ctrlLay->addWidget(btnEquip);
+    ctrlLay->addWidget(btnBackup);
+    lay->addWidget(ctrlBox);
+    reportOutput = new QTextEdit();
+    reportOutput->setReadOnly(true);
+    reportOutput->setPlaceholderText("Report output will appear here...");
+    lay->addWidget(reportOutput);
+    return page;
+}
+
+QWidget* MainWindow::buildWorkoutsPage() {
+    QWidget* page = new QWidget();
+    page->setObjectName("page");
+    QVBoxLayout* lay = new QVBoxLayout(page);
+    lay->setContentsMargins(20, 15, 20, 15);
+    QLabel* title = new QLabel("🏋️  Workout Management");
+    title->setObjectName("pageTitle");
+    lay->addWidget(title);
+    QHBoxLayout* toolbar = new QHBoxLayout();
+    QPushButton* btnAdd = new QPushButton("➕ Add Workout");
+    QPushButton* btnEdit = new QPushButton("✏️ Edit");
+    QPushButton* btnDel = new QPushButton("🗑 Delete");
+    QPushButton* btnComplete = new QPushButton("✅ Mark Complete");
+    QPushButton* btnRefresh = new QPushButton("🔄 Refresh");
+    btnAdd->setObjectName("actionBtn");
+    btnEdit->setObjectName("secondaryBtn");
+    btnDel->setObjectName("dangerBtn");
+    btnComplete->setObjectName("secondaryBtn");
+    btnRefresh->setObjectName("secondaryBtn");
+    connect(btnAdd, &QPushButton::clicked, this, &MainWindow::onAddWorkout);
+    connect(btnEdit, &QPushButton::clicked, this, &MainWindow::onEditWorkout);
+    connect(btnDel, &QPushButton::clicked, this, &MainWindow::onDeleteWorkout);
+    connect(btnComplete, &QPushButton::clicked, this, &MainWindow::onCompleteWorkout);
+    connect(btnRefresh, &QPushButton::clicked, this, &MainWindow::populateWorkoutsTable);
+    toolbar->addStretch();
+    toolbar->addWidget(btnAdd);
+    toolbar->addWidget(btnEdit);
+    toolbar->addWidget(btnComplete);
+    toolbar->addWidget(btnDel);
+    toolbar->addWidget(btnRefresh);
+    lay->addLayout(toolbar);
+    workoutsTable = new QTableWidget();
+    workoutsTable->setColumnCount(8);
+    workoutsTable->setHorizontalHeaderLabels({ "ID","Member","Date","Exercise","Sets","Reps","Weight","Status" });
+    workoutsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    workoutsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    workoutsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    workoutsTable->setAlternatingRowColors(true);
+    workoutsTable->verticalHeader()->setVisible(false);
+    lay->addWidget(workoutsTable);
+    return page;
+}
+
+QWidget* MainWindow::buildSessionsPage() {
+    QWidget* page = new QWidget();
+    page->setObjectName("page");
+    QVBoxLayout* lay = new QVBoxLayout(page);
+    lay->setContentsMargins(20, 15, 20, 15);
+    QLabel* title = new QLabel("📅  Session Scheduling");
+    title->setObjectName("pageTitle");
+    lay->addWidget(title);
+    QHBoxLayout* toolbar = new QHBoxLayout();
+    QPushButton* btnSchedule = new QPushButton("📅 Schedule Session");
+    QPushButton* btnComplete = new QPushButton("✅ Complete");
+    QPushButton* btnCancel = new QPushButton("❌ Cancel");
+    QPushButton* btnRefresh = new QPushButton("🔄 Refresh");
+    btnSchedule->setObjectName("actionBtn");
+    btnComplete->setObjectName("secondaryBtn");
+    btnCancel->setObjectName("dangerBtn");
+    btnRefresh->setObjectName("secondaryBtn");
+    connect(btnSchedule, &QPushButton::clicked, this, &MainWindow::onScheduleSession);
+    connect(btnComplete, &QPushButton::clicked, this, &MainWindow::onCompleteSession);
+    connect(btnCancel, &QPushButton::clicked, this, &MainWindow::onCancelSession);
+    connect(btnRefresh, &QPushButton::clicked, this, &MainWindow::populateSessionsTable);
+    toolbar->addStretch();
+    toolbar->addWidget(btnSchedule);
+    toolbar->addWidget(btnComplete);
+    toolbar->addWidget(btnCancel);
+    toolbar->addWidget(btnRefresh);
+    lay->addLayout(toolbar);
+    sessionsTable = new QTableWidget();
+    sessionsTable->setColumnCount(7);
+    sessionsTable->setHorizontalHeaderLabels({ "ID","Member","Trainer","Date","Time","Type","Status" });
+    sessionsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    sessionsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    sessionsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    sessionsTable->setAlternatingRowColors(true);
+    sessionsTable->verticalHeader()->setVisible(false);
+    lay->addWidget(sessionsTable);
+    return page;
+}
+
+QWidget* MainWindow::buildDietPlansPage() {
+    QWidget* page = new QWidget();
+    page->setObjectName("page");
+    QVBoxLayout* lay = new QVBoxLayout(page);
+    lay->setContentsMargins(20, 15, 20, 15);
+
+    QLabel* title = new QLabel("🥗  Diet Plans");
+    title->setObjectName("pageTitle");
+    lay->addWidget(title);
+
+    QHBoxLayout* cardsRow = new QHBoxLayout();
+
+    // Bulk Diet Plan Card
+    QFrame* bulkCard = new QFrame();
+    bulkCard->setObjectName("statCard");
+    bulkCard->setStyleSheet("QFrame#statCard { border: 2px solid #06d6a0; border-radius:12px; background:#16213e; }");
+    QVBoxLayout* bulkLayout = new QVBoxLayout(bulkCard);
+    bulkLayout->setContentsMargins(20, 16, 20, 16);
+
+    QLabel* bulkTitle = new QLabel("💪 BULK DIET PLAN");
+    bulkTitle->setStyleSheet("color: #06d6a0; font-size: 18px; font-weight: bold;");
+    bulkTitle->setAlignment(Qt::AlignCenter);
+
+    QTextEdit* bulkDetails = new QTextEdit();
+    bulkDetails->setReadOnly(true);
+    bulkDetails->setMaximumHeight(400);
+    bulkDetails->setPlainText(
+        "════════════════════════════════════════\n"
+        "         BULK DIET PLAN\n"
+        "════════════════════════════════════════\n\n"
+        "📌 DESCRIPTION:\n"
+        "High protein, high carb diet for muscle gain\n\n"
+        "📊 NUTRITION FACTS:\n"
+        "  • Calories: 3000 kcal\n"
+        "  • Protein: 180g\n"
+        "  • Carbs: 350g\n"
+        "  • Fats: 80g\n\n"
+        "🍳 BREAKFAST:\n"
+        "  6 eggs + 2 slices whole wheat bread + 1 banana\n\n"
+        "🍗 LUNCH:\n"
+        "  250g chicken breast + 1 cup rice + mixed vegetables\n\n"
+        "🥩 DINNER:\n"
+        "  250g beef + 2 boiled potatoes + vegetables\n\n"
+        "🥜 SNACKS:\n"
+        "  Protein shake + 1 apple + handful almonds\n\n"
+        "════════════════════════════════════════"
+    );
+    bulkDetails->setStyleSheet("background: #0f3460; color: #ccd6f6; font-family: monospace; font-size: 11px;");
+
+    bulkLayout->addWidget(bulkTitle);
+    bulkLayout->addSpacing(10);
+    bulkLayout->addWidget(bulkDetails);
+
+    // Cut Diet Plan Card
+    QFrame* cutCard = new QFrame();
+    cutCard->setObjectName("statCard");
+    cutCard->setStyleSheet("QFrame#statCard { border: 2px solid #e94560; border-radius:12px; background:#16213e; }");
+    QVBoxLayout* cutLayout = new QVBoxLayout(cutCard);
+    cutLayout->setContentsMargins(20, 16, 20, 16);
+
+    QLabel* cutTitle = new QLabel("🔥 CUT DIET PLAN");
+    cutTitle->setStyleSheet("color: #e94560; font-size: 18px; font-weight: bold;");
+    cutTitle->setAlignment(Qt::AlignCenter);
+
+    QTextEdit* cutDetails = new QTextEdit();
+    cutDetails->setReadOnly(true);
+    cutDetails->setMaximumHeight(400);
+    cutDetails->setPlainText(
+        "════════════════════════════════════════\n"
+        "          CUT DIET PLAN\n"
+        "════════════════════════════════════════\n\n"
+        "📌 DESCRIPTION:\n"
+        "High protein, low carb diet for fat loss\n\n"
+        "📊 NUTRITION FACTS:\n"
+        "  • Calories: 2000 kcal\n"
+        "  • Protein: 160g\n"
+        "  • Carbs: 120g\n"
+        "  • Fats: 50g\n\n"
+        "🍳 BREAKFAST:\n"
+        "  4 eggs + oatmeal with berries\n\n"
+        "🍗 LUNCH:\n"
+        "  200g chicken breast + large salad + 1/2 cup rice\n\n"
+        "🐟 DINNER:\n"
+        "  200g fish + 2 cups vegetables\n\n"
+        "🥜 SNACKS:\n"
+        "  Protein shake + cucumber + yogurt\n\n"
+        "════════════════════════════════════════"
+    );
+    cutDetails->setStyleSheet("background: #0f3460; color: #ccd6f6; font-family: monospace; font-size: 11px;");
+
+    cutLayout->addWidget(cutTitle);
+    cutLayout->addSpacing(10);
+    cutLayout->addWidget(cutDetails);
+
+    cardsRow->addWidget(bulkCard);
+    cardsRow->addWidget(cutCard);
+    lay->addLayout(cardsRow);
+
+    QGroupBox* infoBox = new QGroupBox("⚠️ Important Note");
+    QVBoxLayout* infoLayout = new QVBoxLayout(infoBox);
+    QLabel* infoText = new QLabel(
+        "Diet plans are only available for PREMIUM members.\n"
+        "Contact your trainer for personalized diet plan adjustments."
+    );
+    infoText->setStyleSheet("color: #f77f00; font-size: 12px;");
+    infoText->setAlignment(Qt::AlignCenter);
+    infoLayout->addWidget(infoText);
+    lay->addWidget(infoBox);
+
+    return page;
+}
+
+void MainWindow::showDashboard() { stackedWidget->setCurrentWidget(dashboardPage); updateDashboard(); }
+void MainWindow::showMembers() { stackedWidget->setCurrentWidget(membersPage); populateMembersTable(); }
+void MainWindow::showTrainers() { stackedWidget->setCurrentWidget(trainersPage); populateTrainersTable(); }
+void MainWindow::showPlans() { stackedWidget->setCurrentWidget(plansPage); }
+void MainWindow::showAttendance() { stackedWidget->setCurrentWidget(attendancePage); populateAttendanceTable(); }
+void MainWindow::showEquipment() { stackedWidget->setCurrentWidget(equipmentPage); populateEquipmentTable(); }
+void MainWindow::showPayments() { stackedWidget->setCurrentWidget(paymentsPage); populatePaymentsTable(); }
+void MainWindow::showReports() { stackedWidget->setCurrentWidget(reportsPage); }
+void MainWindow::showWorkouts() { stackedWidget->setCurrentWidget(workoutsPage); populateWorkoutsTable(); }
+void MainWindow::showSessions() { stackedWidget->setCurrentWidget(sessionsPage); populateSessionsTable(); }
+void MainWindow::showDietPlans() { stackedWidget->setCurrentWidget(dietPlansPage); }
+
+void MainWindow::updateDashboard() {
+    lblTotalMembers->setText(QString::number(gymManager->getTotalMembers()));
+    lblActiveMembers->setText(QString::number(gymManager->getActiveMembers()));
+    lblTotalTrainers->setText(QString::number(gymManager->getTotalTrainers()));
+    lblTodayCheckIns->setText(QString::number(gymManager->getTodayCheckIns()));
+    lblMonthlyRevenue->setText(QString::number(gymManager->getMonthlyRevenue(), 'f', 0));
+}
+
+void MainWindow::populateMembersTable() {
+    membersTable->setRowCount(0);
+    int count = 0;
+    Member* members = gymManager->getAllMembers(count);
+
+    // If no members, just clear table and return
+    if (!members || count == 0) {
+        membersTable->setRowCount(0);
+        return;
+    }
+
+    // Only add rows for valid members (memberId > 0)
+    for (int i = 0; i < count; ++i) {
+        // Skip invalid members (ID = 0 or empty name)
+        if (members[i].getMemberId() <= 0 || members[i].getName().isEmpty()) {
+            continue;
+        }
+
+        int row = membersTable->rowCount();
+        membersTable->insertRow(row);
+        membersTable->setItem(row, 0, new QTableWidgetItem(QString::number(members[i].getMemberId())));
+        membersTable->setItem(row, 1, new QTableWidgetItem(members[i].getName()));
+        membersTable->setItem(row, 2, new QTableWidgetItem(members[i].getPhone()));
+        membersTable->setItem(row, 3, new QTableWidgetItem(members[i].getEmail()));
+        membersTable->setItem(row, 4, new QTableWidgetItem(members[i].getMembershipPlan()));
+        membersTable->setItem(row, 5, new QTableWidgetItem(members[i].getWantsTrainer() ? "Yes" : "No"));
+
+        QString dietText = members[i].getDietPlan();
+        if (dietText == "None") dietText = "—";
+        else if (dietText == "Bulk (Gain Muscle)") dietText = "Bulk";
+        else if (dietText == "Cut (Lose Fat)") dietText = "Cut";
+        membersTable->setItem(row, 6, new QTableWidgetItem(dietText));
+
+        membersTable->setItem(row, 7, new QTableWidgetItem(members[i].getStatusString()));
+        membersTable->setItem(row, 8, new QTableWidgetItem(QString::number(members[i].getTotalFeesPaid(), 'f', 0)));
+        membersTable->setItem(row, 9, new QTableWidgetItem(QString::number(members[i].getPendingFees(), 'f', 0)));
+
+        if (!members[i].getIsActive()) {
+            for (int c = 0; c < 10; ++c) {
+                membersTable->item(row, c)->setForeground(QColor("#666"));
+            }
+        }
+    }
+    delete[] members;
+}
+
+void MainWindow::populateTrainersTable() {
+    trainersTable->setRowCount(0);
+    int count = 0;
+    Trainer* trainers = gymManager->getAllTrainers(count);
+    if (!trainers) return;
+    for (int i = 0; i < count; ++i) {
+        int row = trainersTable->rowCount();
+        trainersTable->insertRow(row);
+        trainersTable->setItem(row, 0, new QTableWidgetItem(QString::number(trainers[i].getTrainerId())));
+        trainersTable->setItem(row, 1, new QTableWidgetItem(trainers[i].getName()));
+        trainersTable->setItem(row, 2, new QTableWidgetItem(trainers[i].getSpecialization()));
+        trainersTable->setItem(row, 3, new QTableWidgetItem(trainers[i].getShift()));
+        trainersTable->setItem(row, 4, new QTableWidgetItem(trainers[i].getPhone()));
+        trainersTable->setItem(row, 5, new QTableWidgetItem(QString::number(trainers[i].getSalary(), 'f', 0)));
+        trainersTable->setItem(row, 6, new QTableWidgetItem(trainers[i].getAvailabilityStatus()));
+    }
+    delete[] trainers;
+}
+
+void MainWindow::populateAttendanceTable() {
+    attendanceTable->setRowCount(0);
+    int count = 0;
+    Attendance* att = gymManager->getTodayAttendance(count);
+    if (!att) return;
+    for (int i = 0; i < count; ++i) {
+        int row = attendanceTable->rowCount();
+        attendanceTable->insertRow(row);
+        attendanceTable->setItem(row, 0, new QTableWidgetItem(QString::number(att[i].getRecordId())));
+        attendanceTable->setItem(row, 1, new QTableWidgetItem(att[i].getMemberName()));
+        attendanceTable->setItem(row, 2, new QTableWidgetItem(att[i].getDate().toString("dd-MMM-yyyy")));
+        attendanceTable->setItem(row, 3, new QTableWidgetItem(att[i].getSessionType()));
+        attendanceTable->setItem(row, 4, new QTableWidgetItem(att[i].getCheckIn().toString("HH:mm")));
+        attendanceTable->setItem(row, 5, new QTableWidgetItem(att[i].isCheckOutRecorded() ? att[i].getCheckOut().toString("HH:mm") : "—"));
+        attendanceTable->setItem(row, 6, new QTableWidgetItem(att[i].getDurationString()));
+    }
+    delete[] att;
+}
+
+void MainWindow::populateEquipmentTable() {
+    equipmentTable->setRowCount(0);
+    int count = 0;
+    Equipment* equip = gymManager->getAllEquipment(count);
+    if (!equip) return;
+    for (int i = 0; i < count; ++i) {
+        int row = equipmentTable->rowCount();
+        equipmentTable->insertRow(row);
+        equipmentTable->setItem(row, 0, new QTableWidgetItem(QString::number(equip[i].getEquipmentId())));
+        equipmentTable->setItem(row, 1, new QTableWidgetItem(equip[i].getName()));
+        equipmentTable->setItem(row, 2, new QTableWidgetItem(equip[i].getCategory()));
+        equipmentTable->setItem(row, 3, new QTableWidgetItem(equip[i].getBrand()));
+        equipmentTable->setItem(row, 4, new QTableWidgetItem(QString::number(equip[i].getQuantity())));
+        equipmentTable->setItem(row, 5, new QTableWidgetItem(QString::number(equip[i].getAvailableQty())));
+        equipmentTable->setItem(row, 6, new QTableWidgetItem(equip[i].getCondition()));
+        equipmentTable->setItem(row, 7, new QTableWidgetItem(equip[i].getStatusString()));
+        if (equip[i].isMaintenanceDue()) {
+            for (int c = 0; c < 8; ++c) equipmentTable->item(row, c)->setForeground(QColor("#f77f00"));
+        }
+    }
+    delete[] equip;
+}
