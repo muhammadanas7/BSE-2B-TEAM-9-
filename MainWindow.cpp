@@ -1559,3 +1559,497 @@ void MainWindow::showMemberDialog(int memberId) {
     }
     populateMembersTable();
 }
+// MUNEEB
+void MainWindow::showTrainerDialog(int trainerId) {
+    bool isEdit = (trainerId != -1);
+    Trainer existing;
+    if (isEdit) existing = gymManager->getTrainer(trainerId);
+
+    QDialog dlg(this);
+    dlg.setWindowTitle(isEdit ? "Edit Trainer" : "Add Trainer");
+    dlg.setMinimumWidth(450);
+    dlg.setStyleSheet(styleSheet());
+
+    QFormLayout* form = new QFormLayout(&dlg);
+    form->setContentsMargins(20, 16, 20, 16);
+    form->setSpacing(10);
+
+    QLineEdit* leName = new QLineEdit(isEdit ? existing.getName() : "");
+    QLineEdit* lePhone = new QLineEdit(isEdit ? existing.getPhone() : "");
+    QLineEdit* leEmail = new QLineEdit(isEdit ? existing.getEmail() : "");
+    QComboBox* cbSpec = new QComboBox();
+    cbSpec->addItems({ "Cardio","Strength","Yoga","CrossFit","Swimming","Boxing" });
+    if (isEdit) cbSpec->setCurrentText(existing.getSpecialization());
+    QComboBox* cbShift = new QComboBox();
+    cbShift->addItems({ "Morning","Evening","Night" });
+    if (isEdit) cbShift->setCurrentText(existing.getShift());
+    QLineEdit* leSalary = new QLineEdit(isEdit ? QString::number(existing.getSalary()) : "");
+
+    // Add placeholder texts
+    lePhone->setPlaceholderText("11 digits (e.g., 03123456789)");
+    leEmail->setPlaceholderText("name@example.com");
+
+    // Add status labels for validation
+    QLabel* lblPhoneStatus = new QLabel();
+    QLabel* lblEmailStatus = new QLabel();
+    lblPhoneStatus->setStyleSheet("color: #f77f00; font-size: 10px;");
+    lblEmailStatus->setStyleSheet("color: #f77f00; font-size: 10px;");
+    lblPhoneStatus->setVisible(false);
+    lblEmailStatus->setVisible(false);
+
+    // Real-time validation for Phone
+    QObject::connect(lePhone, &QLineEdit::textChanged, [lblPhoneStatus](const QString& text) {
+        if (!text.isEmpty()) {
+            if (!Trainer::isValidPhone(text)) {
+                lblPhoneStatus->setText("❌ " + Trainer::getPhoneValidationMessage());
+                lblPhoneStatus->setVisible(true);
+                lblPhoneStatus->setStyleSheet("color: #f77f00; font-size: 10px;");
+            }
+            else {
+                lblPhoneStatus->setText("✅ Valid Phone Number");
+                lblPhoneStatus->setVisible(true);
+                lblPhoneStatus->setStyleSheet("color: #06d6a0; font-size: 10px;");
+            }
+        }
+        else {
+            lblPhoneStatus->setVisible(false);
+        }
+        });
+
+    // Real-time validation for Email
+    QObject::connect(leEmail, &QLineEdit::textChanged, [lblEmailStatus](const QString& text) {
+        if (!text.isEmpty()) {
+            if (!Trainer::isValidEmail(text)) {
+                lblEmailStatus->setText("❌ " + Trainer::getEmailValidationMessage());
+                lblEmailStatus->setVisible(true);
+                lblEmailStatus->setStyleSheet("color: #f77f00; font-size: 10px;");
+            }
+            else {
+                lblEmailStatus->setText("✅ Valid Email");
+                lblEmailStatus->setVisible(true);
+                lblEmailStatus->setStyleSheet("color: #06d6a0; font-size: 10px;");
+            }
+        }
+        else {
+            lblEmailStatus->setVisible(false);
+        }
+        });
+
+    // Limit input to digits only for Phone
+    QObject::connect(lePhone, &QLineEdit::textChanged, [lePhone](const QString& text) {
+        QString filtered;
+        for (QChar ch : text) {
+            if (ch.isDigit()) filtered.append(ch);
+        }
+        if (filtered != text) {
+            lePhone->blockSignals(true);
+            lePhone->setText(filtered);
+            lePhone->blockSignals(false);
+        }
+        if (filtered.length() > 11) {
+            lePhone->blockSignals(true);
+            lePhone->setText(filtered.left(11));
+            lePhone->blockSignals(false);
+        }
+        });
+
+    form->addRow("Name *", leName);
+    form->addRow("Phone (11 digits)", lePhone);
+    form->addRow("", lblPhoneStatus);
+    form->addRow("Email", leEmail);
+    form->addRow("", lblEmailStatus);
+    form->addRow("Specialization", cbSpec);
+    form->addRow("Shift", cbShift);
+    form->addRow("Salary", leSalary);
+
+    QDialogButtonBox* btns = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    btns->button(QDialogButtonBox::Ok)->setObjectName("actionBtn");
+    form->addRow(btns);
+
+    QObject::connect(btns, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    QObject::connect(btns, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+
+    if (dlg.exec() != QDialog::Accepted) return;
+
+    QString name = leName->text().trimmed();
+    QString phone = lePhone->text().trimmed();
+    QString email = leEmail->text().trimmed();
+
+    if (name.isEmpty()) {
+        QMessageBox::warning(this, "Validation", "Name is required.");
+        return;
+    }
+
+    // Validate Phone (if provided)
+    if (!phone.isEmpty() && !Trainer::isValidPhone(phone)) {
+        QMessageBox::warning(this, "Validation",
+            "Invalid Phone Number!\n" + Trainer::getPhoneValidationMessage());
+        return;
+    }
+
+    // Validate Email (if provided)
+    if (!email.isEmpty() && !Trainer::isValidEmail(email)) {
+        QMessageBox::warning(this, "Validation",
+            "Invalid Email!\n" + Trainer::getEmailValidationMessage());
+        return;
+    }
+
+    if (isEdit) {
+        existing.setName(name);
+        existing.setPhone(phone);
+        existing.setEmail(email);
+        existing.setSpecialization(cbSpec->currentText());
+        existing.setShift(cbShift->currentText());
+        existing.setSalary(leSalary->text().toDouble());
+        gymManager->updateTrainer(existing);
+        QMessageBox::information(this, "Success", "Trainer updated.");
+    }
+    else {
+        Trainer t(0, name, phone, email, cbSpec->currentText(),
+            cbShift->currentText(), leSalary->text().toDouble());
+        gymManager->addTrainer(t);
+        QMessageBox::information(this, "Success",
+            QString("Trainer added! ID: %1").arg(t.getTrainerId()));
+    }
+    populateTrainersTable();
+}
+void MainWindow::showEquipmentDialog(int) {
+    QDialog dlg(this);
+    dlg.setWindowTitle("Add Equipment");
+    dlg.setMinimumWidth(380);
+    dlg.setStyleSheet(styleSheet());
+    QFormLayout* form = new QFormLayout(&dlg);
+    form->setContentsMargins(20, 16, 20, 16);
+    form->setSpacing(10);
+    QLineEdit* leName = new QLineEdit();
+    QComboBox* cbCat = new QComboBox();
+    cbCat->addItems({ "Cardio","Strength","Flexibility","Free Weights" });
+    QLineEdit* leBrand = new QLineEdit();
+    QLineEdit* leQty = new QLineEdit();
+    QLineEdit* lePrice = new QLineEdit();
+    QDateEdit* dePurch = new QDateEdit(QDate::currentDate());
+    dePurch->setCalendarPopup(true);
+    form->addRow("Name *", leName);
+    form->addRow("Category", cbCat);
+    form->addRow("Brand", leBrand);
+    form->addRow("Quantity", leQty);
+    form->addRow("Price (Rs.)", lePrice);
+    form->addRow("Purchased", dePurch);
+    QDialogButtonBox* btns = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    btns->button(QDialogButtonBox::Ok)->setObjectName("actionBtn");
+    form->addRow(btns);
+    QObject::connect(btns, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    QObject::connect(btns, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    if (dlg.exec() != QDialog::Accepted) return;
+    Equipment e(0, leName->text().trimmed(), cbCat->currentText(), leBrand->text().trimmed(), leQty->text().toInt(), lePrice->text().toDouble(), dePurch->date());
+    gymManager->addEquipment(e);
+    QMessageBox::information(this, "Success", "Equipment added!");
+    populateEquipmentTable();
+}
+
+void MainWindow::showPaymentDialog() {
+    QDialog dlg(this);
+    dlg.setWindowTitle("Record Payment");
+    dlg.setMinimumWidth(400);
+    dlg.setStyleSheet(styleSheet());
+    QFormLayout* form = new QFormLayout(&dlg);
+    form->setContentsMargins(20, 16, 20, 16);
+    form->setSpacing(10);
+    QLineEdit* leMemberId = new QLineEdit();
+    QLineEdit* leMemberName = new QLineEdit();
+    leMemberName->setReadOnly(true);
+    QLineEdit* leAmount = new QLineEdit();
+    QLabel* lblPendingFees = new QLabel();
+    lblPendingFees->setStyleSheet("color: #e94560; font-weight: bold;");
+    QComboBox* cbMethod = new QComboBox();
+    cbMethod->addItems({ "Cash", "Card", "Online" });
+    QLineEdit* leDesc = new QLineEdit();
+    leDesc->setPlaceholderText("e.g. Monthly fee payment");
+    QDateEdit* deDate = new QDateEdit(QDate::currentDate());
+    deDate->setCalendarPopup(true);
+    form->addRow("Member ID *", leMemberId);
+    form->addRow("Member Name", leMemberName);
+    form->addRow("Pending Fees", lblPendingFees);
+    form->addRow("Amount *", leAmount);
+    form->addRow("Method", cbMethod);
+    form->addRow("Description", leDesc);
+    form->addRow("Date", deDate);
+    QObject::connect(leMemberId, &QLineEdit::textChanged, [=](const QString& text) {
+        int id = text.toInt();
+        if (id > 0) {
+            Member m = gymManager->getMember(id);
+            if (m.getMemberId() != 0) {
+                leMemberName->setText(m.getName());
+                double pending = m.getPendingFees();
+                lblPendingFees->setText(QString("Rs. %1").arg(pending, 0, 'f', 0));
+                if (pending <= 0) lblPendingFees->setStyleSheet("color: #06d6a0; font-weight: bold;");
+                else lblPendingFees->setStyleSheet("color: #e94560; font-weight: bold;");
+            }
+            else { leMemberName->setText("Member not found"); lblPendingFees->setText("N/A"); }
+        }
+        else { leMemberName->clear(); lblPendingFees->setText(""); }
+        });
+    QDialogButtonBox* btns = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    btns->button(QDialogButtonBox::Ok)->setObjectName("actionBtn");
+    form->addRow(btns);
+    QObject::connect(btns, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    QObject::connect(btns, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    if (dlg.exec() != QDialog::Accepted) return;
+    int memberId = leMemberId->text().toInt();
+    double amount = leAmount->text().toDouble();
+    if (memberId <= 0) { QMessageBox::warning(this, "Validation", "Please enter a valid Member ID."); return; }
+    if (amount <= 0) { QMessageBox::warning(this, "Validation", "Please enter a valid amount."); return; }
+    Member m = gymManager->getMember(memberId);
+    if (m.getMemberId() == 0) { QMessageBox::warning(this, "Error", "Member not found."); return; }
+    double pendingFees = m.getPendingFees();
+    if (amount < pendingFees) { QMessageBox::warning(this, "Insufficient Payment", QString("Amount is less than pending fees!\n\nPending Fees: Rs. %1\nAmount Entered: Rs. %2\n\nPlease enter the exact amount.").arg(pendingFees, 0, 'f', 0).arg(amount, 0, 'f', 0)); return; }
+    if (amount > pendingFees) { QMessageBox::warning(this, "Excess Payment", QString("Amount exceeds pending fees!\n\nPending Fees: Rs. %1\nAmount Entered: Rs. %2\n\nCannot accept excess payment. Please enter the exact amount.").arg(pendingFees, 0, 'f', 0).arg(amount, 0, 'f', 0)); return; }
+    Payment p(0, memberId, m.getName(), amount, deDate->date(), cbMethod->currentText(), leDesc->text().trimmed());
+    if (gymManager->recordPayment(p)) {
+        QMessageBox::information(this, "Success", QString("Payment recorded successfully!\n\nReceipt: %1\nAmount: Rs. %2\nMember: %3").arg(p.getReceiptNumber()).arg(amount, 0, 'f', 0).arg(m.getName()));
+        populatePaymentsTable();
+        populateMembersTable();
+        updateDashboard();
+    }
+    else { QMessageBox::warning(this, "Error", "Payment failed. Please try again."); }
+}
+
+void MainWindow::showWorkoutDialog(int memberId) {
+    QDialog dlg(this);
+    dlg.setWindowTitle("Add Workout");
+    dlg.setMinimumWidth(400);
+    dlg.setStyleSheet(styleSheet());
+    QFormLayout* form = new QFormLayout(&dlg);
+    form->setContentsMargins(20, 16, 20, 16);
+    form->setSpacing(10);
+    QLineEdit* leMemberId = new QLineEdit(memberId > 0 ? QString::number(memberId) : "");
+    QLineEdit* leMemberName = new QLineEdit();
+    leMemberName->setReadOnly(true);
+    QComboBox* cbExercise = new QComboBox();
+    cbExercise->addItems({ "Bench Press", "Squat", "Deadlift", "Pull Up", "Push Up", "Shoulder Press", "Leg Press", "Lat Pulldown", "Bicep Curl", "Tricep Extension" });
+    QLineEdit* leSets = new QLineEdit();
+    QLineEdit* leReps = new QLineEdit();
+    QLineEdit* leWeight = new QLineEdit();
+    QDateEdit* deDate = new QDateEdit(QDate::currentDate());
+    deDate->setCalendarPopup(true);
+    QTextEdit* teNotes = new QTextEdit();
+    teNotes->setMaximumHeight(80);
+    form->addRow("Member ID", leMemberId);
+    form->addRow("Member Name", leMemberName);
+    form->addRow("Exercise", cbExercise);
+    form->addRow("Sets", leSets);
+    form->addRow("Reps", leReps);
+    form->addRow("Weight (kg)", leWeight);
+    form->addRow("Date", deDate);
+    form->addRow("Notes", teNotes);
+    QObject::connect(leMemberId, &QLineEdit::textChanged, [=](const QString& text) {
+        int id = text.toInt();
+        if (id > 0) {
+            Member m = gymManager->getMember(id);
+            if (m.getMemberId() != 0) leMemberName->setText(m.getName());
+            else leMemberName->setText("Not found");
+        }
+        else { leMemberName->clear(); }
+        });
+    QDialogButtonBox* btns = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    btns->button(QDialogButtonBox::Ok)->setObjectName("actionBtn");
+    form->addRow(btns);
+    QObject::connect(btns, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    QObject::connect(btns, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    if (dlg.exec() != QDialog::Accepted) return;
+    int id = leMemberId->text().toInt();
+    if (id <= 0) { QMessageBox::warning(this, "Error", "Valid Member ID required."); return; }
+    Workout w(0, id, leMemberName->text(), deDate->date(), cbExercise->currentText(), leSets->text().toInt(), leReps->text().toInt(), leWeight->text().toDouble(), teNotes->toPlainText());
+    if (gymManager->addWorkout(w)) { QMessageBox::information(this, "Success", "Workout added!"); populateWorkoutsTable(); }
+}
+
+void MainWindow::showSessionDialog() {
+    QDialog dlg(this);
+    dlg.setWindowTitle("Schedule Session");
+    dlg.setMinimumWidth(450);
+    dlg.setStyleSheet(styleSheet());
+    QFormLayout* form = new QFormLayout(&dlg);
+    form->setContentsMargins(20, 16, 20, 16);
+    form->setSpacing(10);
+    QLineEdit* leMemberId = new QLineEdit();
+    QLineEdit* leMemberName = new QLineEdit();
+    leMemberName->setReadOnly(true);
+    QComboBox* cbTrainer = new QComboBox();
+    QComboBox* cbSessionType = new QComboBox();
+    cbSessionType->addItems({ "Personal Training", "Group Class", "Yoga", "CrossFit", "Cardio" });
+    QDateEdit* deDate = new QDateEdit(QDate::currentDate());
+    deDate->setCalendarPopup(true);
+    QTimeEdit* teStart = new QTimeEdit(QTime::currentTime());
+    QTimeEdit* teEnd = new QTimeEdit(QTime::currentTime().addSecs(3600));
+    int trainerCount = 0;
+    Trainer* trainers = gymManager->getAllTrainers(trainerCount);
+    for (int i = 0; i < trainerCount; ++i) cbTrainer->addItem(QString("%1 (%2)").arg(trainers[i].getName()).arg(trainers[i].getSpecialization()), trainers[i].getTrainerId());
+    delete[] trainers;
+    form->addRow("Member ID", leMemberId);
+    form->addRow("Member Name", leMemberName);
+    form->addRow("Trainer", cbTrainer);
+    form->addRow("Session Type", cbSessionType);
+    form->addRow("Date", deDate);
+    form->addRow("Start Time", teStart);
+    form->addRow("End Time", teEnd);
+    QObject::connect(leMemberId, &QLineEdit::textChanged, [=](const QString& text) {
+        int id = text.toInt();
+        if (id > 0) {
+            Member m = gymManager->getMember(id);
+            if (m.getMemberId() != 0) leMemberName->setText(m.getName());
+            else leMemberName->setText("Not found");
+        }
+        else { leMemberName->clear(); }
+        });
+    QDialogButtonBox* btns = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    btns->button(QDialogButtonBox::Ok)->setObjectName("actionBtn");
+    form->addRow(btns);
+    QObject::connect(btns, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    QObject::connect(btns, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    if (dlg.exec() != QDialog::Accepted) return;
+    int memberId = leMemberId->text().toInt();
+    if (memberId <= 0) { QMessageBox::warning(this, "Error", "Valid Member ID required."); return; }
+    int trainerId = cbTrainer->currentData().toInt();
+    QString trainerName = cbTrainer->currentText().split(" (").first();
+    Session s(0, memberId, leMemberName->text(), trainerId, trainerName, deDate->date(), teStart->time(), teEnd->time(), cbSessionType->currentText());
+    if (gymManager->scheduleSession(s)) { QMessageBox::information(this, "Success", "Session scheduled!"); populateSessionsTable(); }
+}
+
+void MainWindow::onAddMember() { showMemberDialog(); }
+void MainWindow::onAddTrainer() { showTrainerDialog(); }
+void MainWindow::onAddEquipment() { showEquipmentDialog(); }
+void MainWindow::onAddWorkout() { showWorkoutDialog(); }
+void MainWindow::onScheduleSession() { showSessionDialog(); }
+
+void MainWindow::onEditMember() {
+    int row = membersTable->currentRow();
+    if (row < 0) { QMessageBox::information(this, "", "Please select a member."); return; }
+    int id = membersTable->item(row, 0)->text().toInt();
+    showMemberDialog(id);
+}
+
+void MainWindow::onMemberTableClicked(int, int) {}
+
+void MainWindow::onEditTrainer() {
+    int row = trainersTable->currentRow();
+    if (row < 0) { QMessageBox::information(this, "", "Please select a trainer."); return; }
+    int id = trainersTable->item(row, 0)->text().toInt();
+    showTrainerDialog(id);
+}
+
+void MainWindow::onDeleteTrainer() {
+    int row = trainersTable->currentRow();
+    if (row < 0) { QMessageBox::information(this, "", "Please select a trainer."); return; }
+    int id = trainersTable->item(row, 0)->text().toInt();
+    QString n = trainersTable->item(row, 1)->text();
+    if (QMessageBox::question(this, "Confirm", QString("Remove trainer '%1'?").arg(n)) == QMessageBox::Yes) {
+        gymManager->removeTrainer(id);
+        populateTrainersTable();
+    }
+}
+
+void MainWindow::onCheckIn() {
+    int id = checkInIdBox->text().toInt();
+    if (id <= 0) { QMessageBox::warning(this, "", "Enter a valid Member ID."); return; }
+    QString session = sessionCombo->currentText();
+    if (gymManager->checkIn(id, session)) {
+        QMessageBox::information(this, "Check In", "Check-in recorded!");
+        checkInIdBox->clear();
+        populateAttendanceTable();
+        updateDashboard();
+    }
+    else { QMessageBox::warning(this, "Error", "Member not found or inactive."); }
+}
+
+void MainWindow::onCheckOut() {
+    int id = checkOutIdBox->text().toInt();
+    if (id <= 0) { QMessageBox::warning(this, "", "Enter a valid Member ID."); return; }
+    if (gymManager->checkOut(id)) {
+        QMessageBox::information(this, "Check Out", "Check-out recorded!");
+        checkOutIdBox->clear();
+        populateAttendanceTable();
+        updateDashboard();
+    }
+    else { QMessageBox::warning(this, "Error", "No open check-in found for today."); }
+}
+
+void MainWindow::onRefreshAttendance() { populateAttendanceTable(); }
+
+void MainWindow::onEditEquipment() { QMessageBox::information(this, "", "Select a row then use Add to create new."); }
+
+void MainWindow::onDeleteEquipment() {
+    int row = equipmentTable->currentRow();
+    if (row < 0) { QMessageBox::information(this, "", "Please select equipment."); return; }
+    int id = equipmentTable->item(row, 0)->text().toInt();
+    QString n = equipmentTable->item(row, 1)->text();
+    if (QMessageBox::question(this, "Confirm", QString("Remove equipment '%1'?").arg(n)) == QMessageBox::Yes) {
+        gymManager->removeEquipment(id);
+        populateEquipmentTable();
+    }
+}
+
+void MainWindow::onRecordPayment() { showPaymentDialog(); }
+
+void MainWindow::onViewReceipt() {
+    int row = paymentsTable->currentRow();
+    if (row < 0) { QMessageBox::information(this, "", "Select a payment first."); return; }
+    int pid = paymentsTable->item(row, 0)->text().toInt();
+    int count = 0;
+    Payment* payments = gymManager->getAllPayments(count);
+    for (int i = 0; i < count; ++i) { if (payments[i].getPaymentId() == pid) { QMessageBox::information(this, "Receipt", payments[i].generateReceipt()); break; } }
+    delete[] payments;
+}
+
+void MainWindow::onEditWorkout() { QMessageBox::information(this, "Info", "Select a workout and use Add to create new."); }
+
+void MainWindow::onDeleteWorkout() {
+    int row = workoutsTable->currentRow();
+    if (row < 0) { QMessageBox::information(this, "", "Select a workout."); return; }
+    populateWorkoutsTable();
+}
+
+void MainWindow::onCompleteWorkout() {
+    int row = workoutsTable->currentRow();
+    if (row < 0) { QMessageBox::information(this, "", "Select a workout."); return; }
+    populateWorkoutsTable();
+}
+
+void MainWindow::onCancelSession() {
+    int row = sessionsTable->currentRow();
+    if (row < 0) { QMessageBox::information(this, "", "Select a session."); return; }
+    populateSessionsTable();
+}
+
+void MainWindow::onCompleteSession() {
+    int row = sessionsTable->currentRow();
+    if (row < 0) { QMessageBox::information(this, "", "Select a session."); return; }
+    populateSessionsTable();
+}
+
+void MainWindow::onGenerateMemberReport() {
+    int id = reportMemberIdBox->text().toInt();
+    if (id <= 0) { reportOutput->setPlainText("Enter a Member ID."); return; }
+    reportOutput->setPlainText(gymManager->generateMemberReport(id));
+}
+
+void MainWindow::onGenerateRevenueReport() {
+    int m = reportMonthCombo->currentData().toInt();
+    int y = reportYearCombo->currentData().toInt();
+    reportOutput->setPlainText(gymManager->generateMonthlyRevenueReport(m, y));
+}
+
+void MainWindow::onBackupData() {
+    QString backupDir = "data/backup_" + QDate::currentDate().toString("yyyy-MM-dd");
+    gymManager->generateEquipmentReport();
+    QDir dir;
+    if (!dir.exists(backupDir)) dir.mkpath(backupDir);
+    QStringList files = { "members","trainers","plans","attendance","equipment","payments","users","workouts","sessions","dietplans" };
+    bool ok = true;
+    for (const QString& f : files) {
+        QString src = "data/" + f + ".csv";
+        QString dest = backupDir + "/" + f + ".csv";
+        if (QFile::exists(src)) { QFile::remove(dest); ok &= QFile::copy(src, dest); }
+    }
+    if (ok) QMessageBox::information(this, "Backup Complete", "Data backed up to:\n" + backupDir);
+    else QMessageBox::warning(this, "Backup", "Backup completed (some files may be empty).");
+} // MUNEEB 
